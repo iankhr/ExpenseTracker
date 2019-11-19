@@ -16,12 +16,17 @@ When new expense (keyword) is found, the program will ask for user input and wil
 # Files and folders
 
 main.py - is the main pythin file which reads, clssifies and summarizes the expenses
+
 expenses.sql - is the mysql schema for the local database to store expenses
+
 server.py - is the flask application, which for now does nothing; but should allow more interactive work with expenses
+
 info.creds - is the file with credentials to use to login to mysql database (use example_info.creds to create yours)
+
 localdb.py - is the file that connects to database and that write, reads and alters the database
 
 /Import - folder to upload your expenses
+
 /templates - folder for html templates for Flask application
 
 # Help and support
