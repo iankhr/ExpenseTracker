@@ -17,17 +17,32 @@ port = int(os.getenv('PORT', 8000))
    
 @app.route('/')
 def root():
+    # read accounts
     accounts = db.readData('accounts')
-    #return app.send_static_file('index.html')
-    return render_template('index.html',  tables=[accounts.to_html(classes='data')],\
-                                            titles=accounts.columns.values)
+    # read expenses
+    expenses = getCurrentMonthExpenses()
+    expenses['date'] = pd.to_datetime(expenses['date'])
+    # extract available dates
+    dates = expenses.resample('M', convention = 'end', on='date').last()
+    dates = dates['date'].values
+    dates = [str(pd.to_datetime(item).month) +'/'+str(pd.to_datetime(item).year) for item in dates]
+    # reverse order so that latest are at the beginning
+    dates = dates[::-1]
+    return render_template('index.html',  dates = dates,\
+                           tables=[accounts.to_html(classes='data')],\
+                           titles=accounts.columns.values)
 
 @app.route('/_load_data')
 def load_data():
     try:
-        request.args.get('month')
+        month = request.args.get('month')
+        data = getCurrentMonthExpenses(month)
+        data.sort_values(by='date', inplace = True, ascending = False)
+        data.reset_index(inplace = True, drop=True)
+        data.drop(['rowid',], axis=1, inplace =True)
+        return jsonify(result = data.to_html(classes = 'data'))
     except Exception as e:
         return str(e)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='127.0.0.2', port=port, debug=True)

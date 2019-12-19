@@ -1,18 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src = "jquery.js"></script>
+    <script src="{{ url_for('static', filename='jquery.js') }}" type="text/javascript"></script>
 	<script type="text/javascript">
-		
+		$(function() {
+			$('#dates').on('change', function() {
+				$.getJSON('/_load_data', {
+						month: this.value,
+					}, function(data) {
+						$("#result").html(data.result);
+					});
+				return false;
+			});
+		});
 	</script>
     <meta charset="UTF-8">
     <title>ExpensesTracker</title>
 </head>
 <body>
-
+<!-- This part contains the table with account balance options -->
 {% for table in tables %}
             {{titles[loop.index]}}
             {{ table|safe }}
 {% endfor %}
+<!-- This part contains the box with filtering options -->
+<form>
+<label for ="dates"> Select month</label>
+<select id = "dates">
+    <option value="-">--</option>
+{% for item in dates %}
+            <option value="{{item}}">{{item}}</option>
+{% endfor %}
+</select>
+</form>
+
+<!-- This part contains the table with expenses -->
+<p id = "result"></p>
 </body>
 </html>

@@ -23,13 +23,13 @@ def readexcel(filename):
         # account identifier
         account = filename.split('_')[-1].split('.')[0]
         # it's SEB excel sheet
-        cash = data.iloc[0,2]
+        cash = data.iloc[7,3]
         # separate transactions
-        transactions = data.iloc[4:,:].reset_index(drop=True)
-        transactions.columns = data.iloc[3,:].tolist()
+        transactions = data.iloc[7:,:].reset_index(drop=True)
+        transactions.columns = data.iloc[6,:].tolist()
         # SEB usually puts payment in message
-        transactions['transdate'] = ['20'+transactions.iloc[i, 3].split('/')[-1] \
-                     if '/' in transactions.iloc[i, 3]\
+        transactions['transdate'] = ['20'+transactions.iloc[i, 1].split('/')[-1] \
+                     if '/' in transactions.iloc[i, 1]\
                      else transactions.iloc[i, 0]
                      for i in transactions.index]
         # convert to date
@@ -37,8 +37,7 @@ def readexcel(filename):
         # cut data before 2019
         transactions =transactions[transactions['transdate']>pd.to_datetime('2019-01-01')]
         # rename columns
-        transactions.columns = ['date1','date2','verification', 'msg', 'amount',\
-                                'saldo','date']
+        transactions.columns = ['date1', 'msg', 'amount', 'saldo','date']
     elif 'ICA' in filename:
         # read data in pandas dataframe
         data = pd.read_csv(CWD+IMPORT+'\\'+filename, sep=';')
@@ -78,8 +77,13 @@ def guesscategory(text):
         # get index
         categoryid = keywords.loc[sresult, 'categoryid'].values
         if len(categoryid)>1:
-            print(categoryid)
-            categoryid = input('Define category for {}: '.format(phrase))
+            # check whether it's the same categories
+            if len(np.unique(categoryid)) == 1:
+                categoryid = np.unique(categoryid)[0]
+            else:
+                print(categoryid)
+                categoryid = input('Define category for {}: '.format(phrase))
+        
         try:
             categoryid = int(categoryid)
         except:
@@ -199,7 +203,8 @@ def aggregateExpenses(transactionList):
     totgroup = totgroup.join(categories.set_index('categoryid'))
     # select expenses only
     totGroupExpenses = totgroup[totgroup['amount']>0]
-    totGroupIncome = -totgroup[totgroup['amount']<0]
+    totGroupIncome = totgroup[totgroup['amount']<0]
+    totGroupIncome['amount'] = -totGroupIncome['amount']
     return totexp['amount'], totGroupExpenses[['amount', 'categoryname',\
                  'monthlyLimit']],\
            totGroupIncome[['amount', 'categoryname', 'monthlyLimit']]
@@ -244,14 +249,15 @@ if __name__ == '__main__':
     if totalExpenses.empty:
         print('No expenses to plot!')
     else:
-        totalExpenses.set_index('categoryname')['amount'].sort_values(\
+        totalExpenses.set_index('categoryname').sort_values(by='amount',\
                                ascending=False).plot.bar(\
                      title = 'Total Expenses by Group')
         plt.show()
     if totalIncome.empty:
         print('No Income to plot!')
     else:
-        totalIncome['amount'].set_index('categoryname').plot.bar(\
+        totalIncome.set_index('categoryname')['amount'].sort_values(\
+                             ascending=False).plot.bar(\
                    title = 'Total Income by Group')
         plt.show()
     
