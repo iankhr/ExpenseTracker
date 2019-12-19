@@ -5,14 +5,45 @@
 	<script type="text/javascript">
 		$(function() {
 			$('#dates').on('change', function() {
+			    if (this.value != '-') {
+					document.getElementById('buttonBar').style.display = "block";
+				} else {
+					$("#transactions").html('');
+					$("#stats").html('');
+					document.getElementById('buttonBar').style.display = "none";
+				};
 				$.getJSON('/_load_data', {
 						month: this.value,
+						inacc: document.getElementById('internalacc').checked
 					}, function(data) {
-						$("#result").html(data.result);
+						$("#transactions").html(data.result);
+						$("#stats").html(data.stats);
 					});
 				return false;
 			});
 		});
+		$(function() {
+			$('#internalacc').on('change', function() {
+				$.getJSON('/_load_data', {
+						month: document.getElementById('dates').value,
+						inacc: document.getElementById('internalacc').checked
+					}, function(data) {
+						$("#transactions").html(data.result);
+						$("#stats").html(data.stats);
+					});
+				return false;
+			});
+		});
+		
+		function openTab(tabName) {
+		  //function from w3school.com/w3css/w3css_tabulators.asp
+		  var i;
+		  var x = document.getElementsByClassName("tab");
+		  for (i = 0; i < x.length; i++) {
+			x[i].style.display = "none";
+		  }
+		  document.getElementById(tabName).style.display = "block";
+		}
 	</script>
     <meta charset="UTF-8">
     <title>ExpensesTracker</title>
@@ -32,9 +63,21 @@
             <option value="{{item}}">{{item}}</option>
 {% endfor %}
 </select>
+
+<input type="checkbox" id = "internalacc" value = "internacc" checked>Show internal accounting</input>
 </form>
 
+
+<!-- Place for the switcher  between tabs-->
+<div class = "button_nav" id = "buttonBar" style = "display:none">
+<button class = "et-tab-switcher" onclick = "openTab('stats')">Overview</button>
+<button class = "et-tab-switcher" onclick = "openTab('transactions')">Transactions</button>
+</div>
+
 <!-- This part contains the table with expenses -->
-<p id = "result"></p>
+<div id = "transactions" class = "tab" style="display:none"></div>
+
+<!-- This part contains the table with general statistics -->
+<div id = "stats" class = "tab"></div>
 </body>
 </html>

@@ -29,18 +29,38 @@ def root():
     # reverse order so that latest are at the beginning
     dates = dates[::-1]
     return render_template('index.html',  dates = dates,\
-                           tables=[accounts.to_html(classes='data')],\
+                           tables=[accounts.to_html(classes='data',\
+                           columns=['date', 'account', 'balance'])],\
                            titles=accounts.columns.values)
 
 @app.route('/_load_data')
 def load_data():
     try:
         month = request.args.get('month')
-        data = getCurrentMonthExpenses(month)
-        data.sort_values(by='date', inplace = True, ascending = False)
-        data.reset_index(inplace = True, drop=True)
-        data.drop(['rowid',], axis=1, inplace =True)
-        return jsonify(result = data.to_html(classes = 'data'))
+        # get value for internal accounting
+        internalchk = request.args.get('inacc')
+        if month == '-':
+            return jsonify(result = '')
+        else:
+            data = getCurrentMonthExpenses(month)
+            # aggregate expenses
+            NetExpenses, totalExpenses, totalIncome = aggregateExpenses(data)
+            data.sort_values(by='date', inplace = True, ascending = False)
+            data.reset_index(inplace = True, drop=True)
+            data.drop(['rowid',], axis=1, inplace =True)
+            # change categories from numbers to text
+            categories = db.readData('categories')
+            categories.set_index('categoryid', inplace= True)
+            data = data.join(categories, on = 'category')
+            if internalchk == 'false':
+                data = data[data['category'] != 16]
+                
+            return jsonify(result = data.to_html(classes = 'data',\
+                           columns = ['date','account','amount','msg',\
+                                      'categoryname'], index = False),\
+                           stats = totalExpenses[['categoryname',\
+                                'amount', 'monthlyLimit']].to_html(classes = 'data',\
+                                index = False))
     except Exception as e:
         return str(e)
 
