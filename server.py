@@ -14,7 +14,55 @@ from main import getCurrentMonthExpenses, aggregateExpenses
 
 app = Flask(__name__, static_url_path='')
 port = int(os.getenv('PORT', 8000))   
-   
+
+def dftohtml(dftable, columns = None, tags = None, classes = None,\
+             add_head = True, custom_columns = None):
+    """
+    This is a custom function to convert DataFrame to html and further pass it 
+    to the website part.
+    
+    In this way I can add extra tags for future ability to edit data from the
+    browser
+    """
+    # check whether it's dataframe
+    if type(dftable) != pd.DataFrame:
+        raise ValueError('Table must be DataFrame!')
+    
+    # check whether only certain data is needed        
+    if columns is None:
+        columns = dftable.columns
+    
+    # check whether the amount of custom columns matches the columns    
+    if custom_columns is not None:
+        if len(custom_columns) != len(columns):
+            raise ValueError('Length of the custom columns does not match the amount of columns!')
+    
+    # open table tag
+    htmlstr = '<table'
+    if classes is not None:
+        htmlstr = htmlstr + ' class ="{}"'.format(classes)
+    htmlstr = htmlstr+'>'
+    
+    # add head of the table
+    if add_head:
+        htmlstr = htmlstr + '<thead><tr>'
+        if custom_columns is None:
+            htmlstr = htmlstr + ''.join(['<th>'+str(item)+'</th>'\
+                                         for item in columns])
+        else:
+            htmlstr = htmlstr + ''.join(['<th>'+str(item)+'</th>'\
+                                         for item in custom_columns])
+            
+        htmlstr = htmlstr + '</tr></thead>'
+    
+    # add content
+    htmlstr = htmlstr + ''.join(['<tr>'+''.join(\
+                    ['<td>'+str(element)+'</td>' for element in item]\
+                    )+'</tr>' for item in dftable.loc[:,columns].values.tolist()])
+    # close table tag
+    htmlstr = htmlstr+'</table>'
+    return htmlstr
+
 @app.route('/')
 def root():
     # read accounts
@@ -55,12 +103,17 @@ def load_data():
             if internalchk == 'false':
                 data = data[data['category'] != 16]
                 
-            return jsonify(result = data.to_html(classes = 'data',\
+            return jsonify(result = dftohtml(data,\
+                           classes = 'table table-brodered table-striped table-hover',\
                            columns = ['date','account','amount','msg',\
-                                      'categoryname'], index = False),\
-                           stats = totalExpenses[['categoryname',\
-                                'amount', 'monthlyLimit']].to_html(classes = 'data',\
-                                index = False))
+                                      'categoryname'],\
+                           custom_columns = ['Date','Account', 'Amount, SEK',\
+                                'Description', 'Category']),\
+                           stats = dftohtml(totalExpenses,\
+                           columns = ['categoryname','amount', 'monthlyLimit'],\
+                           classes = 'table table-brodered table-striped table-hover',\
+                           custom_columns = ['Category', 'Net Expsenses',\
+                                             'Monthly limit']))
     except Exception as e:
         return str(e)
 
