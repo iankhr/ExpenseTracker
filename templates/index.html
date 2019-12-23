@@ -5,9 +5,12 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 	<script type="text/javascript">
+		// Animation was taken from https://preloaders.net
 		$(function() {
 			//Function to load transactions when date is selected
 			$('#dates').on('change', function() {
+				$("#summary_expenses").html('<img src="{{ url_for('static', filename='load_animation.gif') }}">');
+				$("#transactions").html('<img src="{{ url_for('static', filename='load_animation.gif') }}">');
 			    if (this.value != '-') {
 					document.getElementById('buttonBar').style.display = "block";
 				} else {
@@ -47,6 +50,27 @@
 			x[i].style.display = "none";
 		  }
 		  document.getElementById(tabName).style.display = "block";
+		}
+		
+		function editRow(rowid, actcmnd) {
+			// function saves the edit
+			var arr = [];
+			var form_elements = document.getElementById(rowid).getElementsByTagName("input");
+			for (let elem of form_elements){
+				arr.push(elem.value);
+			}
+			$.getJSON('/_edit_data', {
+				action: actcmnd,
+				dataid: rowid,
+				date: arr[0],
+				account: arr[1],
+				amount: arr[2],
+				msg: arr[3],
+				cat: arr[4],
+				rowtext: document.getElementById(rowid).innerHTML
+			}, function(data) {
+				document.getElementById(rowid).innerHTML = data.result;
+			});
 		}
 	</script>
     <meta charset="UTF-8">
