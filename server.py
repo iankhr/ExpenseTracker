@@ -159,6 +159,7 @@ def edit_data():
     amount = request.args.get('amount')
     msg = request.args.get('msg')
     cat = request.args.get('cat')
+    categories = db.readData('categories')
     dataText = [date,account,amount,msg,cat]
     if action == 0:
         # for each td insert an input field
@@ -166,9 +167,24 @@ def edit_data():
         cols = [item.replace('<td>','') for item in cols]
         # remove last elements
         cols = cols[:-2]
+        catNum = categories.loc[categories['categoryname'].apply(lambda x: x.upper())\
+                            == cols[-1].upper(),\
+                            'categoryid'].values[0]
         # add input fields
-        result = ['<td><input type = "text" id="{}_input_{}" value = "{}"></input></td>'.format(i,rowid,cols[i])\
-                  for i in range(len(cols))]
+        """
+        Make separate inputs for date and category
+        """
+        result = ['<td><input type = "date" id="{}_input_{}" value = "{}"></input></td>'.format(0,rowid,cols[0])]
+        result = result + ['<td><input type = "text" id="{}_input_{}" value = "{}"></input></td>'.format(i,rowid,cols[i])\
+                  for i in range(len(cols)) if (i>0) & (i<(len(cols)-1))]
+        selectList = ['<option selected = "selected" value = "{}">'.format(\
+                      cols[-1])+cols[-1]+'</option>']
+        selectList = selectList+['<option value = {}>'.format(\
+                      categories.loc[i,'categoryname'])\
+                      +categories.loc[i,'categoryname']+'</option>'\
+                      for i in range(len(categories))\
+                      if categories.loc[i,'categoryid']!=catNum]
+        result = result + ['<td><select>'+''.join(selectList)+'<select></td>']
         result = ''.join(result)
         # add buttons
         result = result+'<td><button class="btn btn-link" value="{}" onclick="editRow(this.value,1)">Cancel</button>'.format(rowid)\
@@ -179,8 +195,10 @@ def edit_data():
         cols = [item.replace('<td>','') for item in cols]
         # remove last elements
         cols = cols[:-2]
+        category = bs(cols[-1]).find('option').attrs['value']
         # extract values from input elements
-        cols = [bs(item).find('input').attrs['value'] for item in cols]
+        cols = [bs(item).find('input').attrs['value'] for item in cols if 'input' in item]
+        cols = cols + [category,]
         # add back td and tr
         cols = ['<td>'+item+'</td>' for item in cols]
         # form html string
@@ -190,12 +208,11 @@ def edit_data():
                                  rowid)+\
                                 'Edit</button></td>'
     elif action == 2:
-        # encode cat
-        categories = db.readData('categories')
-        cat = categories.loc[categories['categoryname'].apply(lambda x: x.upper()) == cat.upper(),\
-                             'categoryid'].values[0]
+        catNum = categories.loc[categories['categoryname'].apply(lambda x: x.upper())\
+                            == cat.upper(),\
+                            'categoryid'].values[0]
         # create an update dataframe
-        data = pd.DataFrame([date,account,amount,msg,cat], index = ['date',\
+        data = pd.DataFrame([date,account,amount,msg,catNum], index = ['date',\
                             'account', 'amount', 'msg', 'category']).T
         # update data
         db.alterData(data, 'transactions', where =\

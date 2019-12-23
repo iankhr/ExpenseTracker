@@ -59,6 +59,10 @@
 			for (let elem of form_elements){
 				arr.push(elem.value);
 			}
+			if (actcmnd == 2) {
+				var catname = document.getElementById(rowid).getElementsByTagName("select")[0].value;
+				//document.getElementById("debug").innerHTML = catname;
+			}
 			$.getJSON('/_edit_data', {
 				action: actcmnd,
 				dataid: rowid,
@@ -66,7 +70,7 @@
 				account: arr[1],
 				amount: arr[2],
 				msg: arr[3],
-				cat: arr[4],
+				cat: catname,
 				rowtext: document.getElementById(rowid).innerHTML
 			}, function(data) {
 				document.getElementById(rowid).innerHTML = data.result;
@@ -77,6 +81,7 @@
     <title>ExpensesTracker</title>
 </head>
 <body>
+<div id = "debug"></div>
 <div class = "container">
 <div class = "page-header">
 <h1>ExpensesTracker</h1>
